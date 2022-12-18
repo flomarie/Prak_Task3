@@ -33,30 +33,21 @@ class RandomForestMSE:
             Array of size n_val_objects
         """
         self.b = [DecisionTreeRegressor(criterion='squared_error',
-                                   max_depth=self.max_depth,
-                                   **self.trees_parameters)
+                                        max_depth=self.max_depth,
+                                        **self.trees_parameters)
                   for t in range(self.n_estimators)]
-        self.included = np.array([True] * self.estimators)
         rng = np.random.default_rng(seed=42)
-        EPS1 = 1e-3
-        EPS2 = 1e-3
-        self.feat_sub = 
+        feature_subsample_size = self.feature_subsample_size
+        if self.feature_subsample_size is None:
+            feature_subsample_size = max(1, int(X.shape[1] / 3))
+        self.feat_sub = np.zeros(shape=(self.n_estimators, feature_subsample_size), dtype=int)
         for t in range(self.n_estimators):
             ind_sub = rng.integers(0, X.shape[0], size=X.shape[0])
-            if self.feature_subsample_size is None:
-                feature_sub = rng.integers(0, X.shape[1], size=max(1, int(X.shape[1] / 3)))
-            else:
-                feature_sub = rng.integers(0, X.shape[1], size=self.feature_subsample_size)
-            X_sub = X[ind_sub, feature_sub]
+            feature_sub = rng.integers(0, X.shape[1], feature_subsample_size)
+            X_sub = X[ind_sub][:, feature_sub]
             y_sub = y[ind_sub]
             self.b[t].fit(X_sub, y_sub)
-            '''
-            if 1 / X_sub.shape[0] * (self.b[t].predict(X_sub) - y_sub) ** 2 > EPS1:
-                self.included[t] = False
-            if not(X_val is None) and not(y_val is None):
-                if 1 / X_val.shape[0] * (self.b[t].predict(X_val) - y_val) ** 2 > EPS2:
-                    self.included[t] = False
-            '''
+            self.feat_sub[t] = feature_sub
 		        
     def predict(self, X):
         """
@@ -69,9 +60,10 @@ class RandomForestMSE:
         """
         prediction = np.zeros(shape=X.shape[0])
         for t in range(self.n_estimators):
-            prediction += self.b[t].predict(X)
+            prediction += self.b[t].predict(X[:, self.feat_sub[t]])
         prediction *= 1 / self.n_estimators
         return prediction
+
 
 
 class GradientBoostingMSE:
@@ -102,27 +94,24 @@ class GradientBoostingMSE:
         y : numpy ndarray
             Array of size n_objects
         """
-        def mse(y_true, y_pred):
-            return 1 / y_true.shape[0] * (y_true - y_pred) ** 2
-
         self.b = [DecisionTreeRegressor(max_depth=self.max_depth, **self.trees_parameters)
                   for i in range(self.n_estimators)]
-        self.b[0].fit(X, y)
-        f = self.b[0].predict(X)
-        self.alphas = np.zeros(shape=self.n_estimators)
-        for t in range(1, self.n_estimators):
+        self.alphas = np.ones(shape=self.n_estimators)
+        rng = np.random.default_rng(seed=42)
+        feature_subsample_size = self.feature_subsample_size
+        if feature_subsample_size is None:
+            feature_subsample_size = max(1, int(X.shape[1] / 3))
+        self.feat_sub = np.zeros(shape=(self.n_estimators, feature_subsample_size), dtype=int)
+        f = np.zeros_like(y)
+        for t in range(0, self.n_estimators):
             s = y - f
-            self.b[t] = DecisionTreeRegressor(max_depth=self.max_depth,
-                                              **self.trees_parameters)
-            if self.feature_subsample_size is None:
-                feature_sub = rng.integers(0, X.shape[1], size=max(1, int(X.shape[1] / 3)))
-            else:
-                feature_sub = rng.integers(0, X.shape[1], size=self.feature_subsample_size)
-            self.b[t].fit(X, s)
-            b_t = self.b[t].predict(X)
+            feature_sub = rng.integers(0, X.shape[1], size=feature_subsample_size)
+            self.b[t].fit(X[:, feature_sub], s)
+            self.feat_sub[t] = feature_sub
+            b_t = self.b[t].predict(X[:, feature_sub])
             alpha = minimize_scalar(lambda a: np.sum((f + a * self.learning_rate * b_t - y) ** 2))
-            self.alphas[t] = alpha
-            f += self.learning_rate * alpha * b_t
+            self.alphas[t] = alpha.x
+            f += self.learning_rate * alpha.x * b_t
 
     def predict(self, X):
         """
@@ -135,6 +124,5 @@ class GradientBoostingMSE:
         """
         y = np.zeros(shape=X.shape[0])
         for t in range(self.n_estimators):
-            y += self.learning_rate * self.alphas[t] * self.b[t].predict(X)
+            y += self.learning_rate * self.alphas[t] * self.b[t].predict(X[:, self.feat_sub[t]])
         return y
-
