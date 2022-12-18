@@ -126,3 +126,4 @@ class GradientBoostingMSE:
         for t in range(self.n_estimators):
             y += self.learning_rate * self.alphas[t] * self.b[t].predict(X[:, self.feat_sub[t]])
         return y
+
