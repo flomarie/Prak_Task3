@@ -1,13 +1,13 @@
 FROM python:3.11-slim
 
-COPY Prak_Task3/src/requirements.txt /root/Prak_Task3/src/requirements.txt
+COPY src/requirements.txt /root/src/requirements.txt
 
-RUN chown -R root:root /root/Prak_Task3
+RUN chown -R root:root /root
 
-WORKDIR /root/Prak_Task3/src
+WORKDIR /root/src
 RUN pip3 install -r requirements.txt
 
-COPY Prak_Task3/src/ ./
+COPY src/ ./
 RUN chown -R root:root ./
 
 ENV SECRET_KEY hello
