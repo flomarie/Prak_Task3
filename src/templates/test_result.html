@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Result</title>
+</head>
+<body>
+<h1>Result</h1>
+<nav>
+    <ul>
+      <li><a href="/">New model</a></li>
+    </ul>
+  </nav>
+<table>
+    <tbody>
+        {% for ans_i in ans %}
+            <tr>
+                <td>{{ans_i}}</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+</table>
+
+</body>
+</html>

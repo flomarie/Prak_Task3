@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Trained GradientBoosting</title>
+</head>
+<body>
+<h1>Parameters:</h1>
+<h2>n_estimators: {{params.n_estimators}}</h2>
+<h2>max_depth: {{params.max_depth}}</h2>
+<h2>feature_subsample_size: {{params.feature_subsample_size}}</h2>
+<h2>learning_rate: {{params.max_depth}}</h2>
+<h2>train dataset name: {{path}}</h2>
+<h2>Choose dataset for test</h2>
+</body>
+</html>
+
+<div class="container">
+      {{ wtf.quick_form(form) }}
+</div>
+
+{% endblock %}
