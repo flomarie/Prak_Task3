@@ -1,0 +1,9 @@
+numpy
+scipy
+scikit-learn
+pandas
+wtforms
+flask
+flask_wtf
+flask_bootstrap
+
